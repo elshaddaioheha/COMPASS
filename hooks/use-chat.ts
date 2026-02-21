@@ -3,7 +3,11 @@
 import { useState, useCallback, useEffect } from "react";
 import type { Conversation, Message, FeedbackRating } from "@/lib/types";
 import { useLocalStorage } from "./use-local-storage";
-import { PENDING_RESPONSE_TITLE, PENDING_RESPONSE_BODY } from "@/lib/constants";
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
@@ -11,34 +15,47 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function createSystemMessage(): Message {
-  return {
-    id: generateId(),
-    role: "assistant",
-    content: `**${PENDING_RESPONSE_TITLE}**\n\n${PENDING_RESPONSE_BODY}`,
-    timestamp: Date.now(),
-  };
-}
-
 function generateTitle(content: string): string {
   const cleaned = content.trim();
-
-  // Extract first sentence or phrase
   const firstSentence = cleaned.split(/[.!?\n]/)[0].trim();
   const text = firstSentence || cleaned;
-
-  // Limit to 35 characters for sidebar
   const maxLength = 35;
   if (text.length <= maxLength) return text;
-
-  // Truncate at last complete word before limit
   const truncated = text.slice(0, maxLength);
   const lastSpace = truncated.lastIndexOf(" ");
-
   return lastSpace > 15 ? `${truncated.slice(0, lastSpace)}…` : `${truncated}…`;
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+// ─── Flask API call ───────────────────────────────────────────────────────────
+
+interface ApiResponse {
+  reply: string;
+  emotion: string | null;
+  confidence: number | null;
+  error?: string;
+}
+
+async function callChatApi(
+  message: string,
+  sessionId: string,
+): Promise<ApiResponse> {
+  const res = await fetch(`${API_URL}/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // session_id ties this call to a specific conversation context in Flask
+    body: JSON.stringify({ message, session_id: sessionId }),
+    credentials: "include",   // send cookies (Flask session fallback)
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API returned ${res.status}: ${text}`);
+  }
+
+  return res.json() as Promise<ApiResponse>;
+}
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useChat() {
   const storage = useLocalStorage();
@@ -60,12 +77,12 @@ export function useChat() {
     setInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Derived state ────────────────────────────────────────────────────────
+  // ── Derived state ──────────────────────────────────────────────────────────
 
   const activeConversation =
     conversations.find((c) => c.id === activeConversationId) ?? null;
 
-  // ── Persist helper ───────────────────────────────────────────────────────
+  // ── Persist helper ─────────────────────────────────────────────────────────
 
   const persist = useCallback(
     (updated: Conversation[]) => {
@@ -75,7 +92,7 @@ export function useChat() {
     [storage],
   );
 
-  // ── Create new conversation ──────────────────────────────────────────────
+  // ── Create new conversation ────────────────────────────────────────────────
 
   const createConversation = useCallback(() => {
     const newConvo: Conversation = {
@@ -91,13 +108,13 @@ export function useChat() {
     return newConvo.id;
   }, [conversations, persist]);
 
-  // ── Switch conversation ──────────────────────────────────────────────────
+  // ── Switch conversation ────────────────────────────────────────────────────
 
   const switchConversation = useCallback((id: string) => {
     setActiveConversationId(id);
   }, []);
 
-  // ── Delete conversation ──────────────────────────────────────────────────
+  // ── Delete conversation ────────────────────────────────────────────────────
 
   const deleteConversation = useCallback(
     (id: string) => {
@@ -110,14 +127,14 @@ export function useChat() {
     [conversations, activeConversationId, persist],
   );
 
-  // ── Clear all conversations ──────────────────────────────────────────────
+  // ── Clear all conversations ────────────────────────────────────────────────
 
   const clearAllConversations = useCallback(() => {
     persist([]);
     setActiveConversationId(null);
   }, [persist]);
 
-  // ── Send message ─────────────────────────────────────────────────────────
+  // ── Send message ───────────────────────────────────────────────────────────
 
   const sendMessage = useCallback(
     (content: string) => {
@@ -143,7 +160,7 @@ export function useChat() {
       const idx = current.findIndex((c) => c.id === convoId);
       if (idx < 0) return;
 
-      // Add user message
+      // Append user message immediately (optimistic update)
       const userMsg: Message = {
         id: generateId(),
         role: "user",
@@ -151,48 +168,77 @@ export function useChat() {
         timestamp: Date.now(),
       };
 
-      current[idx] = {
-        ...current[idx],
-        messages: [...current[idx].messages, userMsg],
-        // Update title from first user message
-        title:
-          current[idx].title === "New Conversation"
-            ? generateTitle(content)
-            : current[idx].title,
-        updatedAt: Date.now(),
-      };
-
-      persist(current);
+      const withUser: Conversation[] = current.map((c, i) =>
+        i === idx
+          ? {
+            ...c,
+            messages: [...c.messages, userMsg],
+            title:
+              c.title === "New Conversation"
+                ? generateTitle(content)
+                : c.title,
+            updatedAt: Date.now(),
+          }
+          : c,
+      );
+      persist(withUser);
       setIsTyping(true);
 
-      // Respond with "implementation coming soon" placeholder
-      setTimeout(
-        () => {
-          const botMsg = createSystemMessage();
+      // Call Flask API and append bot reply
+      const sessionId = convoId; // Each conversation = isolated session context
+      callChatApi(content.trim(), sessionId)
+        .then((data) => {
+          const botMsg: Message = {
+            id: generateId(),
+            role: "assistant",
+            content: data.reply,
+            timestamp: Date.now(),
+            emotion: data.emotion ?? undefined,
+            confidence: data.confidence ?? undefined,
+          };
 
           setConversations((prev) => {
-            const copy = [...prev];
-            const i = copy.findIndex((c) => c.id === convoId);
-            if (i >= 0) {
-              copy[i] = {
-                ...copy[i],
-                messages: [...copy[i].messages, botMsg],
-                updatedAt: Date.now(),
-              };
-            }
+            const copy = prev.map((c) =>
+              c.id === convoId
+                ? {
+                  ...c,
+                  messages: [...c.messages, botMsg],
+                  updatedAt: Date.now(),
+                }
+                : c,
+            );
             storage.setConversations(copy);
             return copy;
           });
-
+        })
+        .catch((err) => {
+          console.error("[COMPASS] API error:", err);
+          // Show a friendly error message in chat instead of crashing
+          const errMsg: Message = {
+            id: generateId(),
+            role: "assistant",
+            content:
+              "I'm having trouble connecting right now. Please make sure the backend is running and try again. 🔌",
+            timestamp: Date.now(),
+          };
+          setConversations((prev) => {
+            const copy = prev.map((c) =>
+              c.id === convoId
+                ? { ...c, messages: [...c.messages, errMsg], updatedAt: Date.now() }
+                : c,
+            );
+            storage.setConversations(copy);
+            return copy;
+          });
+        })
+        .finally(() => {
           setIsTyping(false);
-        },
-        1500 + Math.random() * 1000,
-      );
+        });
     },
     [activeConversationId, conversations, persist, storage],
   );
 
-  // ── Feedback ─────────────────────────────────────────────────────────────
+  // ── Feedback ───────────────────────────────────────────────────────────────
 
   const submitFeedback = useCallback(
     (messageId: string, rating: FeedbackRating) => {
@@ -205,7 +251,7 @@ export function useChat() {
     [storage],
   );
 
-  // ── Rename conversation ──────────────────────────────────────────────────
+  // ── Rename conversation ────────────────────────────────────────────────────
 
   const renameConversation = useCallback(
     (id: string, newTitle: string) => {

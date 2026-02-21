@@ -7,7 +7,10 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: number;
+  emotion?: string;      // detected by DistilBERT classifier (e.g. "anxiety")
+  confidence?: number;   // model confidence 0–1 (e.g. 0.87)
 }
+
 
 export interface Conversation {
   id: string;
