@@ -1,0 +1,103 @@
+services:
+  - type: web
+    name: compass-backend
+    runtime: python
+    rootDir: backend
+
+    # ── Build ─────────────────────────────────────────────────────────────────
+    # Render runs this once every deploy.
+    # We download the spaCy language model here because it can't be in
+    # requirements.txt and must be present before the app starts.
+    buildCommand: |
+      pip install -r requirements.txt &&
+      python -m spacy download en_core_web_sm
+
+    # ── Start ─────────────────────────────────────────────────────────────────
+    # 2 workers is right for Render's free/starter tier (1 vCPU).
+    # --timeout 120 because DistilBERT takes ~30s to load on cold start.
+    # $PORT is injected by Render automatically — do not hardcode 5000.
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT --timeout 120 app:app
+
+    # ── Plan ─────────────────────────────────────────────────────────────────
+    # Starter ($7/mo) is strongly recommended over Free.
+    # The free tier has a 512MB RAM limit — torch alone needs ~600MB.
+    # Starter gives 512MB guaranteed + burst, which is enough for PyTorch CPU.
+    plan: starter
+
+    # ── Environment variables ─────────────────────────────────────────────────
+    envVars:
+      # Flask
+      - key: FLASK_ENV
+        value: production
+
+      - key: SECRET_KEY
+        generateValue: true          # Render generates a secure random value
+
+      # PORT is set automatically by Render — do NOT define it here
+
+      # MongoDB — set your real Atlas URI in the Render dashboard
+      # (Dashboard → Your Service → Environment → Add Secret)
+      - key: MONGO_URI
+        sync: false                  # sync: false = you set it manually in dashboard
+
+      - key: MONGO_DB_NAME
+        value: mental_health_chatbot
+
+      - key: MONGO_COLLECTION
+        value: conversations
+
+      # Redis — set your real Redis URL in the Render dashboard
+      - key: REDIS_URL
+        sync: false
+
+      - key: REDIS_MAX_CONNECTIONS
+        value: "10"                  # keep low on free/starter Redis tiers
+
+      - key: SESSION_TTL_SECONDS
+        value: "1800"
+
+      - key: PREDICTION_CACHE_TTL
+        value: "60"
+
+      # Model — ONNX files are gitignored so we use PyTorch mode on Render.
+      # Once you have a way to host the model files (see note below),
+      # set USE_ONNX=true and ONNX_MODEL_PATH to wherever you store them.
+      - key: USE_ONNX
+        value: "false"
+
+      - key: MODEL_DIR
+        value: ./distilbert_finetuned
+
+      - key: ONNX_MODEL_PATH
+        value: ./onnx_model/model_quantized.onnx
+
+      - key: LABELS_PATH
+        value: ./label_classes.json
+
+      # NLP
+      - key: SPACY_MODEL
+        value: en_core_web_sm
+
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.55"
+
+      - key: MAX_INPUT_LENGTH
+        value: "512"
+
+      - key: MAX_RAW_CHARS
+        value: "1000"
+
+      # Rate limiting
+      - key: RATE_LIMIT_REQUESTS
+        value: "30"
+
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+
+      # Groq LLM — set your key in the Render dashboard
+      # If not set, the app falls back to template replies automatically
+      - key: GROQ_API_KEY
+        sync: false
+
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant
