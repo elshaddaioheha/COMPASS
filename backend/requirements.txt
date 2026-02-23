@@ -1,19 +1,32 @@
 # requirements.txt
-# Pin exact versions to ensure reproducible builds
+# ─────────────────────────────────────────────────────────────────────────────
+# IMPORTANT — torch is installed CPU-only to keep the build under Render's
+# disk/memory limits. The full GPU wheel is ~2GB and will cause build timeouts.
+# The --index-url line below installs the smaller CPU-only torch build (~200MB).
+# ─────────────────────────────────────────────────────────────────────────────
 
 # Web framework
 flask==3.0.3
 gunicorn==22.0.0
+flask-cors==4.0.1
 
-# NLP
-transformers==4.41.2
+# Environment variable loading
+python-dotenv==1.0.1
+
+# NLP — CPU-only torch (smaller wheel, required for Render)
+# Install with: pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
+# Listed here for reference; the buildCommand in render.yaml handles this.
 torch==2.3.1
+transformers==4.41.2
 spacy==3.7.5
 
-# ONNX inference (faster than PyTorch on CPU)
+# ONNX inference (optional — only used when USE_ONNX=true)
 onnxruntime==1.18.1
-optimum==1.20.0       # for ONNX export helper
 onnx==1.16.1
+optimum==1.20.0
+
+# Groq LLM client
+groq==0.9.0
 
 # Database
 pymongo==4.7.3
@@ -21,5 +34,11 @@ pymongo==4.7.3
 # Redis
 redis==5.0.6
 
-# Utilities
+# ML utilities (used in train.py and preprocessor)
 numpy==1.26.4
+scikit-learn==1.5.0
+pandas==2.2.2
+tqdm==4.66.4
+
+# Dataset download (used in download_dataset.py)
+datasets==2.19.2
