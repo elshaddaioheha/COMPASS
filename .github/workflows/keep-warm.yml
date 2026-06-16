@@ -1,0 +1,49 @@
+name: Keep backend warm
+
+# Render's free tier sleeps the backend after ~15 min of inactivity, so the
+# first request afterwards is slow. This workflow pings /health on a schedule to
+# keep it awake. Set the Render URL as a repo variable named BACKEND_URL:
+#   Settings → Secrets and variables → Actions → Variables → New repository variable
+#   Name: BACKEND_URL   Value: https://your-backend.onrender.com   (no trailing slash)
+
+on:
+  schedule:
+    # Every 10 minutes — comfortably under Render's 15-min sleep window, with
+    # margin for GitHub's scheduler running late. Cron is UTC.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {} # lets you run it manually from the Actions tab
+
+# Don't pile up overlapping pings if a run is slow (cold start).
+concurrency:
+  group: keep-warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping backend /health
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::warning::BACKEND_URL repo variable is not set — skipping."
+            echo "Add it under Settings → Secrets and variables → Actions → Variables."
+            exit 0
+          fi
+
+          url="${BACKEND_URL%/}/health"
+          echo "Pinging $url ..."
+          # --max-time 90 tolerates a full cold start (~50-60s).
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$url" || echo "000")
+          echo "HTTP $code"
+
+          # 200 = healthy, 503 = degraded (Redis/Mongo down) but the server is
+          # awake and responding. Either means the dyno is no longer asleep.
+          if [ "$code" = "200" ] || [ "$code" = "503" ]; then
+            echo "Backend is awake."
+          else
+            echo "::error::Backend ping returned $code"
+            exit 1
+          fi
