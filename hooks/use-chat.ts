@@ -15,14 +15,37 @@ import { useLocalStorage } from "./use-local-storage";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-// Abort the request if the backend takes too long (it can cold-start on free
-// hosting tiers). Keeps the UI from hanging on "typing…" forever.
-const REQUEST_TIMEOUT_MS = 30_000;
+// Render's free tier spins the backend down after ~15 min idle, so the first
+// request can take up to ~60s to wake it. Give each attempt a generous timeout
+// and retry the "service waking" responses (502/503/504) Render returns.
+const REQUEST_TIMEOUT_MS = 60_000;
+const MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 1_500;
+
+// HTTP statuses Render/proxies return while a cold-starting service is not ready.
+const COLD_START_STATUSES = new Set([502, 503, 504]);
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+// Fire-and-forget ping to wake a sleeping backend as soon as the app loads,
+// so it's likely awake by the time the user sends their first message.
+async function warmUpBackend(): Promise<void> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    await fetch(`${API_URL}/health`, {
+      method: "GET",
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+  } catch {
+    // Ignore — this is only a best-effort wake-up.
+  }
 }
 
 function generateTitle(content: string): string {
@@ -45,6 +68,15 @@ interface ApiResponse {
   error?: string;
 }
 
+// A genuine application-level HTTP error (4xx/5xx) that should NOT be retried,
+// as opposed to a transient cold-start/network failure.
+class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function callChatApi(
   message: string,
   sessionId: string,
@@ -62,29 +94,52 @@ async function callChatApi(
     body.reply_language = language;
   }
 
-  // Abort on timeout so the UI never hangs forever.
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let lastError: unknown;
 
-  try {
-    const res = await fetch(`${API_URL}/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // session_id ties this call to a specific conversation context in Flask
-      body: JSON.stringify(body),
-      credentials: "include", // send cookies (Flask session fallback)
-      signal: controller.signal,
-    });
+  // Retry the cold-start cases (timeout, network drop, 502/503/504) so a
+  // sleeping Render backend that wakes mid-request still gets answered.
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`API returned ${res.status}: ${text}`);
+    try {
+      const res = await fetch(`${API_URL}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // session_id ties this call to a specific conversation context in Flask
+        body: JSON.stringify(body),
+        credentials: "include", // send cookies (Flask session fallback)
+        signal: controller.signal,
+      });
+
+      // Backend still waking — retry instead of surfacing an error.
+      if (COLD_START_STATUSES.has(res.status)) {
+        throw new Error(`backend waking (${res.status})`);
+      }
+
+      if (!res.ok) {
+        // A real application error (400/429/500…) — don't retry these.
+        const text = await res.text().catch(() => "");
+        throw new ApiError(`API returned ${res.status}: ${text}`, res.status);
+      }
+
+      return (await res.json()) as ApiResponse;
+    } catch (err) {
+      lastError = err;
+      // Don't retry genuine 4xx/5xx app errors — only cold-start/network ones.
+      if (err instanceof ApiError) throw err;
+      if (attempt < MAX_RETRIES) {
+        await sleep(RETRY_BASE_DELAY_MS * (attempt + 1)); // linear backoff
+        continue;
+      }
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return (await res.json()) as ApiResponse;
-  } finally {
-    clearTimeout(timeout);
   }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Request failed after retries");
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -109,6 +164,8 @@ export function useChat() {
     }
     setLanguageState(storage.getLanguage());
     setInitialized(true);
+    // Wake a possibly-sleeping backend now, so it's ready by send time.
+    void warmUpBackend();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Language preference (persisted) ──────────────────────────────────────────
@@ -257,12 +314,13 @@ export function useChat() {
         })
         .catch((err) => {
           console.error("[COMPASS] API error:", err);
-          // Show a friendly error message in chat instead of crashing
+          // Show a friendly error message in chat instead of crashing.
+          // The backend may be waking from sleep (free hosting), so invite a retry.
           const errMsg: Message = {
             id: generateId(),
             role: "assistant",
             content:
-              "I'm having trouble connecting right now. Please make sure the backend is running and try again. 🔌",
+              "I couldn't reach the server just now — it may be waking up from sleep, which can take up to a minute on the free tier. Please send your message again in a moment. 🔌",
             timestamp: Date.now(),
           };
           setConversations((prev) => {
