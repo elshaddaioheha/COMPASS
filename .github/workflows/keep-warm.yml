@@ -25,7 +25,9 @@ jobs:
     steps:
       - name: Ping backend /health
         env:
-          BACKEND_URL: ${{ vars.BACKEND_URL }}
+          # Defaults to the current Render URL; override with a BACKEND_URL repo
+          # variable if the backend URL changes.
+          BACKEND_URL: ${{ vars.BACKEND_URL || 'https://compass-backend-bgej.onrender.com' }}
         run: |
           if [ -z "$BACKEND_URL" ]; then
             echo "::warning::BACKEND_URL repo variable is not set — skipping."
