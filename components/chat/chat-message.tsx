@@ -27,6 +27,11 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
   // a real feeling, just a low-confidence signal).
   const showEmotion =
     !isUser && !!message.emotion && message.emotion !== "uncertain";
+  // Confidence "gauge": how strongly the model read this emotion (0–100%).
+  const confidencePct =
+    typeof message.confidence === "number"
+      ? Math.round(message.confidence * 100)
+      : null;
   const [copied, setCopied] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<FeedbackRating | null>(
     null,
@@ -78,17 +83,39 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
             {isUser ? "You" : APP_NAME}
           </span>
           {showEmotion && (
-            <Badge
-              variant="secondary"
-              className="h-4 px-1.5 text-[9px] capitalize"
+            <div
+              className="flex items-center gap-1.5"
               title={
-                typeof message.confidence === "number"
-                  ? `Detected emotion (${Math.round(message.confidence * 100)}% confidence)`
-                  : "Detected emotion"
+                confidencePct !== null
+                  ? `${message.emotion} · ${confidencePct}% model confidence`
+                  : `Detected emotion: ${message.emotion}`
               }
             >
-              {message.emotion}
-            </Badge>
+              <Badge
+                variant="secondary"
+                className="h-4 px-1.5 text-[9px] capitalize"
+              >
+                {message.emotion}
+              </Badge>
+              {confidencePct !== null && (
+                <div className="flex items-center gap-1">
+                  {/* Confidence gauge — bar length + colour reflect how strongly
+                      the model read this emotion. */}
+                  <div className="h-1 w-12 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${confidencePct}%`,
+                        backgroundColor: confidenceColor(confidencePct),
+                      }}
+                    />
+                  </div>
+                  <span className="text-[9px] tabular-nums text-muted-foreground">
+                    {confidencePct}%
+                  </span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -152,6 +179,15 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
       </div>
     </div>
   );
+}
+
+// ─── Confidence gauge colour ─────────────────────────────────────────────────
+// Green = strong read, amber = moderate, red = weak. Hex literals are used
+// because Tailwind theme tokens aren't available in inline styles.
+function confidenceColor(pct: number): string {
+  if (pct >= 75) return "#16a34a"; // green-600
+  if (pct >= 50) return "#ca8a04"; // yellow-600
+  return "#dc2626"; // red-600
 }
 
 // ─── Simple Markdown-ish renderer ────────────────────────────────────────────
