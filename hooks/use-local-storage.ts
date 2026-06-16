@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { STORAGE_KEY, FEEDBACK_STORAGE_KEY } from "@/lib/constants";
-import type { Conversation, MessageFeedback } from "@/lib/types";
+import { useCallback } from "react";
+import {
+  STORAGE_KEY,
+  FEEDBACK_STORAGE_KEY,
+  LANGUAGE_STORAGE_KEY,
+  DEFAULT_LANGUAGE,
+} from "@/lib/constants";
+import type { Conversation, MessageFeedback, LanguageCode } from "@/lib/types";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -32,6 +37,20 @@ function loadFeedback(): MessageFeedback[] {
 
 function saveFeedback(feedback: MessageFeedback[]) {
   localStorage.setItem(FEEDBACK_STORAGE_KEY, JSON.stringify(feedback));
+}
+
+function loadLanguage(): LanguageCode {
+  if (typeof window === "undefined") return DEFAULT_LANGUAGE;
+  try {
+    const raw = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return (raw as LanguageCode) || DEFAULT_LANGUAGE;
+  } catch {
+    return DEFAULT_LANGUAGE;
+  }
+}
+
+function saveLanguage(language: LanguageCode) {
+  localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
@@ -85,6 +104,14 @@ export function useLocalStorage() {
     saveFeedback(all);
   }, []);
 
+  // ── Language ─────────────────────────────────────────────────────────────
+
+  const getLanguage = useCallback(() => loadLanguage(), []);
+
+  const setLanguage = useCallback((language: LanguageCode) => {
+    saveLanguage(language);
+  }, []);
+
   return {
     getConversations,
     setConversations,
@@ -94,5 +121,7 @@ export function useLocalStorage() {
     clearAllConversations,
     getFeedback,
     addFeedback,
+    getLanguage,
+    setLanguage,
   };
 }

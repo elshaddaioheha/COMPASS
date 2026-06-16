@@ -1,4 +1,9 @@
-import type { QuickAction, CrisisResource } from "./types";
+import type {
+  QuickAction,
+  CrisisResource,
+  LanguageOption,
+  LanguageCode,
+} from "./types";
 
 // ─── Application ─────────────────────────────────────────────────────────────
 
@@ -9,12 +14,20 @@ export const APP_DESCRIPTION =
   "A safe, anonymous space for emotional support and mental wellness guidance.";
 export const STORAGE_KEY = "compass-conversations";
 export const FEEDBACK_STORAGE_KEY = "compass-feedback";
+export const LANGUAGE_STORAGE_KEY = "compass-language";
 
-// ─── System Response ─────────────────────────────────────────────────────────
+// ─── Language ────────────────────────────────────────────────────────────────
+// Matches the backend's supported languages (en, yo, pcm). "auto" lets the
+// backend detect the input language and reply in the same one.
 
-export const PENDING_RESPONSE_TITLE = "Implementation In Progress";
-export const PENDING_RESPONSE_BODY =
-  "Thank you for sharing. Our AI-powered therapeutic engine is currently under development. Once integrated, COMPASS will provide personalised CBT exercises, sentiment-aware dialogue, and culturally relevant mental health resources.\n\nIn the meantime, please explore the quick actions or reach out to the crisis resources if you need immediate support.";
+export const DEFAULT_LANGUAGE: LanguageCode = "auto";
+
+export const LANGUAGES: LanguageOption[] = [
+  { code: "auto", label: "Auto" },
+  { code: "en", label: "English" },
+  { code: "yo", label: "Yorùbá" },
+  { code: "pcm", label: "Pidgin" },
+];
 
 // ─── Quick Actions ───────────────────────────────────────────────────────────
 
@@ -63,39 +76,43 @@ export const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 // ─── Crisis Resources ────────────────────────────────────────────────────────
+// NSPI and MANI match the numbers used in the backend's crisis template
+// (services/dialogue_manager.py), so the app is consistent end to end.
+// IMPORTANT: verify every number against an official source before going to
+// production — hotlines change. SURPIN is marked below as needing verification.
 
 export const CRISIS_RESOURCES: CrisisResource[] = [
   {
     name: "Nigeria Suicide Prevention Initiative (NSPI)",
-    number: "****",
+    number: "0800-7842433", // 0800-SUICIDE — matches the backend crisis template
     description:
       "24/7 crisis support for individuals experiencing suicidal thoughts.",
     region: "Nigeria",
   },
   {
+    name: "Mentally Aware Nigeria Initiative (MANI)",
+    number: "+234 809 111 6264", // matches the backend crisis template
+    description:
+      "Mental health advocacy and a support line available across Nigeria.",
+    region: "Nigeria",
+  },
+  {
     name: "SURPIN (Suicide Research & Prevention Initiative)",
-    number: "****",
+    number: "+234 908 021 7555", // TODO: verify current SURPIN number before publishing
     description: "Mental health support line based in Lagos, Nigeria.",
     region: "Nigeria",
   },
   {
-    name: "Mentally Aware Nigeria Initiative (MANI)",
-    number: "****",
-    description:
-      "Organization providing mental health advocacy and support across Nigeria.",
-    region: "Nigeria",
-  },
-  {
-    name: "International Association for Suicide Prevention",
-    number: "****",
-    description:
-      "Global directory of crisis centres for international support.",
+    name: "Crisis Text Line",
+    number: "Text HOME to 741741",
+    description: "Free, 24/7 text-based crisis support (US, CA, UK, IE).",
     region: "International",
   },
   {
-    name: "Crisis Text Line",
-    number: "****",
-    description: "Free, 24/7 text-based crisis support.",
+    name: "International Association for Suicide Prevention",
+    number: "iasp.info/resources/Crisis_Centres",
+    description:
+      "Global directory to find a crisis centre in your country.",
     region: "International",
   },
 ];

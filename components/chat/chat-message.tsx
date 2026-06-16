@@ -2,12 +2,10 @@
 
 import { cn } from "@/lib/utils";
 import type { Message, FeedbackRating } from "@/lib/types";
-import { APP_NAME, PENDING_RESPONSE_TITLE } from "@/lib/constants";
+import { APP_NAME } from "@/lib/constants";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -15,7 +13,6 @@ import {
   User,
   Copy,
   Check,
-  Construction,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -26,7 +23,10 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
   const isUser = message.role === "user";
-  const isSystemPending = message.content.includes(PENDING_RESPONSE_TITLE);
+  // Show the detected emotion on bot replies (skip "uncertain", which isn't
+  // a real feeling, just a low-confidence signal).
+  const showEmotion =
+    !isUser && !!message.emotion && message.emotion !== "uncertain";
   const [copied, setCopied] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<FeedbackRating | null>(
     null,
@@ -73,48 +73,35 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
           isUser ? "items-end" : "items-start",
         )}
       >
-        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-          {isUser ? "You" : APP_NAME}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+            {isUser ? "You" : APP_NAME}
+          </span>
+          {showEmotion && (
+            <Badge
+              variant="secondary"
+              className="h-4 px-1.5 text-[9px] capitalize"
+              title={
+                typeof message.confidence === "number"
+                  ? `Detected emotion (${Math.round(message.confidence * 100)}% confidence)`
+                  : "Detected emotion"
+              }
+            >
+              {message.emotion}
+            </Badge>
+          )}
+        </div>
 
-        {/* System "Implementation In Progress" styled as a Card */}
-        {!isUser && isSystemPending ? (
-          <Card className="w-full">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Construction className="size-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">
-                  {PENDING_RESPONSE_TITLE}
-                </span>
-                {/* <Badge variant="secondary" className="text-[10px] ml-auto">
-                  Coming Soon
-                </Badge> */}
-              </div>
-              <Separator />
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Thank you for sharing. Our AI-powered therapeutic engine is
-                currently under development. Once integrated, COMPASS will
-                provide personalised CBT exercises, sentiment-aware dialogue,
-                and culturally relevant mental health resources.
-              </p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                In the meantime, please reach out to the crisis resources if you
-                need immediate support.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div
-            className={cn(
-              "rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words",
-              isUser
-                ? "bg-primary text-primary-foreground rounded-tr-sm"
-                : "bg-muted rounded-tl-sm",
-            )}
-          >
-            {renderContent(message.content)}
-          </div>
-        )}
+        <div
+          className={cn(
+            "rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words",
+            isUser
+              ? "bg-primary text-primary-foreground rounded-tr-sm"
+              : "bg-muted rounded-tl-sm",
+          )}
+        >
+          {renderContent(message.content)}
+        </div>
 
         {/* Actions (only for bot messages) */}
         {!isUser && (

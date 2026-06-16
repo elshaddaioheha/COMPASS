@@ -19,6 +19,8 @@ export function ChatInterface() {
     sendMessage,
     submitFeedback,
     renameConversation,
+    language,
+    setLanguage,
   } = useChat();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -55,6 +57,8 @@ export function ChatInterface() {
         onSendMessage={sendMessage}
         onFeedback={submitFeedback}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
+        language={language}
+        onLanguageChange={setLanguage}
       />
     </div>
   );

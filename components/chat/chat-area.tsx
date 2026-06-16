@@ -6,7 +6,7 @@ import { ChatTypingIndicator } from "./chat-typing-indicator";
 import { ChatWelcome } from "./chat-welcome";
 import { ChatInput } from "./chat-input";
 import { ChatHeader } from "./chat-header";
-import type { Conversation, FeedbackRating } from "@/lib/types";
+import type { Conversation, FeedbackRating, LanguageCode } from "@/lib/types";
 
 interface ChatAreaProps {
   conversation: Conversation | null;
@@ -14,6 +14,8 @@ interface ChatAreaProps {
   onSendMessage: (content: string) => void;
   onFeedback: (messageId: string, rating: FeedbackRating) => void;
   onToggleSidebar: () => void;
+  language: LanguageCode;
+  onLanguageChange: (language: LanguageCode) => void;
 }
 
 export function ChatArea({
@@ -22,6 +24,8 @@ export function ChatArea({
   onSendMessage,
   onFeedback,
   onToggleSidebar,
+  language,
+  onLanguageChange,
 }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +68,12 @@ export function ChatArea({
       </div>
 
       {/* Fixed input at bottom */}
-      <ChatInput onSend={onSendMessage} disabled={isTyping} />
+      <ChatInput
+        onSend={onSendMessage}
+        disabled={isTyping}
+        language={language}
+        onLanguageChange={onLanguageChange}
+      />
     </div>
   );
 }

@@ -20,6 +20,16 @@ export interface Conversation {
   updatedAt: number;
 }
 
+// ─── Language Types ──────────────────────────────────────────────────────────
+
+// "auto" lets the backend detect the language and reply in the same one.
+export type LanguageCode = "auto" | "en" | "yo" | "pcm";
+
+export interface LanguageOption {
+  code: LanguageCode;
+  label: string;
+}
+
 // ─── Quick Action Types ──────────────────────────────────────────────────────
 
 export interface QuickAction {

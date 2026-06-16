@@ -2,16 +2,28 @@
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { APP_NAME } from "@/lib/constants";
-import { Send, Loader2 } from "lucide-react";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { APP_NAME, LANGUAGES } from "@/lib/constants";
+import type { LanguageCode } from "@/lib/types";
+import { Send, Loader2, Languages } from "lucide-react";
 import { useState, useRef, type KeyboardEvent } from "react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
+  language: LanguageCode;
+  onLanguageChange: (language: LanguageCode) => void;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  disabled,
+  language,
+  onLanguageChange,
+}: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -56,9 +68,29 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             )}
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground text-center mt-2">
-          {APP_NAME} is not a substitute for professional mental health care.
-        </p>
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Languages className="size-3.5 shrink-0" aria-hidden="true" />
+            <NativeSelect
+              size="sm"
+              aria-label="Reply language"
+              value={language}
+              onChange={(e) =>
+                onLanguageChange(e.target.value as LanguageCode)
+              }
+              className="border-0"
+            >
+              {LANGUAGES.map((lang) => (
+                <NativeSelectOption key={lang.code} value={lang.code}>
+                  {lang.label}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </div>
+          <p className="text-[10px] text-muted-foreground text-right">
+            {APP_NAME} is not a substitute for professional mental health care.
+          </p>
+        </div>
       </div>
     </div>
   );

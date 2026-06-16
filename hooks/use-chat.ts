@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { Conversation, Message, FeedbackRating } from "@/lib/types";
+import type {
+  Conversation,
+  Message,
+  FeedbackRating,
+  LanguageCode,
+} from "@/lib/types";
+import { DEFAULT_LANGUAGE } from "@/lib/constants";
 import { useLocalStorage } from "./use-local-storage";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+
+// Abort the request if the backend takes too long (it can cold-start on free
+// hosting tiers). Keeps the UI from hanging on "typing…" forever.
+const REQUEST_TIMEOUT_MS = 30_000;
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
@@ -38,21 +48,43 @@ interface ApiResponse {
 async function callChatApi(
   message: string,
   sessionId: string,
+  language: LanguageCode,
 ): Promise<ApiResponse> {
-  const res = await fetch(`${API_URL}/send`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    // session_id ties this call to a specific conversation context in Flask
-    body: JSON.stringify({ message, session_id: sessionId }),
-    credentials: "include",   // send cookies (Flask session fallback)
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`API returned ${res.status}: ${text}`);
+  // Build the request body. Always send the input language hint; when the user
+  // picked a specific language (not "auto"), also force the reply language so
+  // Yoruba/Pidgin users get replies back in their language.
+  const body: Record<string, string> = {
+    message,
+    session_id: sessionId,
+    language,
+  };
+  if (language !== "auto") {
+    body.reply_language = language;
   }
 
-  return res.json() as Promise<ApiResponse>;
+  // Abort on timeout so the UI never hangs forever.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${API_URL}/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // session_id ties this call to a specific conversation context in Flask
+      body: JSON.stringify(body),
+      credentials: "include", // send cookies (Flask session fallback)
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`API returned ${res.status}: ${text}`);
+    }
+
+    return (await res.json()) as ApiResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -66,6 +98,7 @@ export function useChat() {
   >(null);
   const [isTyping, setIsTyping] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [language, setLanguageState] = useState<LanguageCode>(DEFAULT_LANGUAGE);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -74,8 +107,19 @@ export function useChat() {
     if (saved.length > 0) {
       setActiveConversationId(saved[0].id);
     }
+    setLanguageState(storage.getLanguage());
     setInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Language preference (persisted) ──────────────────────────────────────────
+
+  const setLanguage = useCallback(
+    (next: LanguageCode) => {
+      setLanguageState(next);
+      storage.setLanguage(next);
+    },
+    [storage],
+  );
 
   // ── Derived state ──────────────────────────────────────────────────────────
 
@@ -186,7 +230,7 @@ export function useChat() {
 
       // Call Flask API and append bot reply
       const sessionId = convoId; // Each conversation = isolated session context
-      callChatApi(content.trim(), sessionId)
+      callChatApi(content.trim(), sessionId, language)
         .then((data) => {
           const botMsg: Message = {
             id: generateId(),
@@ -235,7 +279,7 @@ export function useChat() {
           setIsTyping(false);
         });
     },
-    [activeConversationId, conversations, persist, storage],
+    [activeConversationId, conversations, persist, storage, language],
   );
 
   // ── Feedback ───────────────────────────────────────────────────────────────
@@ -276,5 +320,7 @@ export function useChat() {
     sendMessage,
     submitFeedback,
     renameConversation,
+    language,
+    setLanguage,
   };
 }
