@@ -17,6 +17,7 @@ Run in development:
     python app.py
 """
 
+import re
 import uuid
 
 # ── Load .env FIRST — before any other import reads os.getenv() ───────────────
@@ -57,12 +58,12 @@ app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
 
 # ── CORS — allow the Next.js frontend to call this API ───────────────────────
-# Development: http://localhost:3000
+# Development: any localhost port (Next.js picks the next free port if 3000 is taken)
 # Production:  https://compass-two-iota.vercel.app
 try:
     from flask_cors import CORS
     CORS(app, origins=[
-        "http://localhost:3000",
+        re.compile(r"http://localhost(:\d+)?$"),
         "https://compass-two-iota.vercel.app",
     ], supports_credentials=True)
     print("[app] CORS enabled for Next.js frontend.")

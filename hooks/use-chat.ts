@@ -106,9 +106,7 @@ async function callChatApi(
       const res = await fetch(`${API_URL}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // session_id ties this call to a specific conversation context in Flask
         body: JSON.stringify(body),
-        credentials: "include", // send cookies (Flask session fallback)
         signal: controller.signal,
       });
 
