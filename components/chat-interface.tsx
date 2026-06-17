@@ -27,7 +27,7 @@ export function ChatInterface() {
 
   if (!initialized) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-[100dvh] items-center justify-center">
         <div className="space-y-3 w-64">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4" />
@@ -38,7 +38,7 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-[100dvh] overflow-hidden">
       <ConversationSidebar
         conversations={conversations}
         activeConversationId={activeConversationId}

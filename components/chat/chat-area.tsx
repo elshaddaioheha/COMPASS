@@ -38,7 +38,7 @@ export function ChatArea({
   const hasMessages = conversation && conversation.messages.length > 0;
 
   return (
-    <div className="relative flex flex-1 flex-col h-screen overflow-hidden">
+    <div className="relative flex flex-1 flex-col h-[100dvh] overflow-hidden">
       <ChatHeader
         onToggleSidebar={onToggleSidebar}
         conversationTitle={conversation?.title}
@@ -47,7 +47,7 @@ export function ChatArea({
       {/* Scrollable messages area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto pt-[49px] md:pt-0 pb-[120px] md:pb-4"
+        className="flex-1 overflow-y-auto pt-[calc(49px+env(safe-area-inset-top))] md:pt-0 pb-[150px] md:pb-4"
       >
         <div className="mx-auto max-w-3xl">
           {!hasMessages ? (

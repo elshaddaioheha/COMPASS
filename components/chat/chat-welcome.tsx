@@ -25,7 +25,7 @@ const FEATURES = [
 
 export function ChatWelcome() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] py-8 md:py-12 px-6 text-center max-w-4xl mx-auto">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100dvh-200px)] py-8 md:py-12 px-6 text-center max-w-4xl mx-auto">
       {/* Logo and Branding - Always Centered */}
       <div className="rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 p-4 md:p-5 mb-4 md:mb-6 shadow-sm">
         <Compass className="size-10 md:size-12 text-primary" />

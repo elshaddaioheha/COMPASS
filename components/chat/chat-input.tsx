@@ -42,7 +42,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto md:bottom-auto z-10 shrink-0 border-t bg-background/95 md:bg-background backdrop-blur-sm md:backdrop-blur-none p-3 md:p-4 supports-[backdrop-filter]:bg-background/60 md:supports-[backdrop-filter]:bg-background">
+    <div className="fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto md:bottom-auto z-10 shrink-0 border-t bg-background/95 md:bg-background backdrop-blur-sm md:backdrop-blur-none p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:p-4 md:pb-4 supports-[backdrop-filter]:bg-background/60 md:supports-[backdrop-filter]:bg-background">
       <div className="mx-auto max-w-3xl">
         <div className="flex items-end gap-2 rounded-2xl px-3 py-2">
           <Textarea
@@ -51,7 +51,7 @@ export function ChatInput({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Share what's on your mind..."
-            className="min-h-8 max-h-30 resize-none border-0 bg-transparent p-1 text-sm focus-visible:ring-0 focus-visible:border-0 shadow-none placeholder:text-muted-foreground/60"
+            className="min-h-8 max-h-30 resize-none border-0 bg-transparent p-1 text-base md:text-sm focus-visible:ring-0 focus-visible:border-0 shadow-none placeholder:text-muted-foreground/60"
             disabled={disabled}
             rows={1}
           />
@@ -59,7 +59,8 @@ export function ChatInput({
             size="icon"
             onClick={handleSend}
             disabled={!value.trim() || disabled}
-            className="shrink-0 h-8 w-8"
+            aria-label="Send message"
+            className="shrink-0 h-9 w-9 md:h-8 md:w-8"
           >
             {disabled ? (
               <Loader2 className="size-4 animate-spin" />

@@ -16,7 +16,7 @@ export function ChatHeader({
   conversationTitle,
 }: ChatHeaderProps) {
   return (
-    <header className="fixed md:sticky top-0 left-0 right-0 md:left-auto md:right-auto z-20 flex items-center justify-between border-b bg-background/95 backdrop-blur-sm px-4 py-2 supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed md:sticky top-0 left-0 right-0 md:left-auto md:right-auto z-20 flex items-center justify-between border-b bg-background/95 backdrop-blur-sm px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] md:py-2 supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
