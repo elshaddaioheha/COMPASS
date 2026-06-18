@@ -1,17 +1,20 @@
 name: Keep backend warm
 
-# Render's free tier sleeps the backend after ~15 min of inactivity, so the
-# first request afterwards is slow. This workflow pings /health on a schedule to
-# keep it awake. Set the Render URL as a repo variable named BACKEND_URL:
-#   Settings → Secrets and variables → Actions → Variables → New repository variable
-#   Name: BACKEND_URL   Value: https://your-backend.onrender.com   (no trailing slash)
+# Pings the backend /health to keep Render's free tier from sleeping.
+#
+# The scheduled trigger is intentionally DISABLED — UptimeRobot handles the
+# regular keep-warm pings instead (GitHub's cron is often delayed past Render's
+# 15-min sleep window, so it's unreliable for this). This workflow is kept as a
+# manual backup only. To re-enable automatic pings, uncomment the `schedule:`
+# block below.
+#
+# Optional: override the target by setting a BACKEND_URL repo variable
+# (Settings → Secrets and variables → Actions → Variables).
 
 on:
-  schedule:
-    # Every 10 minutes — comfortably under Render's 15-min sleep window, with
-    # margin for GitHub's scheduler running late. Cron is UTC.
-    - cron: "*/10 * * * *"
-  workflow_dispatch: {} # lets you run it manually from the Actions tab
+  # schedule:
+  #   - cron: "*/10 * * * *"   # every 10 min (UTC) — re-enable to auto-run
+  workflow_dispatch: {} # run manually from the Actions tab
 
 # Don't pile up overlapping pings if a run is slow (cold start).
 concurrency:
