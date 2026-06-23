@@ -33,6 +33,9 @@ services:
       - key: SECRET_KEY
         generateValue: true          # Render generates a secure random value
 
+      - key: FRONTEND_ORIGINS
+        value: http://localhost:3000,https://compass-two-iota.vercel.app,https://compaass.vercel.app
+
       # PORT is set automatically by Render — do NOT define it here
 
       # MongoDB — set your real Atlas URI in the Render dashboard
