@@ -16,6 +16,74 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+interface EmotionConfig {
+  emoji: string;
+  label: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+}
+
+const EMOTION_MAP: Record<string, EmotionConfig> = {
+  anxiety: {
+    emoji: "😰",
+    label: "Anxious",
+    bgColor: "bg-amber-500/10 dark:bg-amber-500/20",
+    textColor: "text-amber-700 dark:text-amber-400",
+    borderColor: "border-amber-500/20 dark:border-amber-500/30",
+  },
+  depression: {
+    emoji: "😔",
+    label: "Depression",
+    bgColor: "bg-indigo-500/10 dark:bg-indigo-500/20",
+    textColor: "text-indigo-700 dark:text-indigo-400",
+    borderColor: "border-indigo-500/20 dark:border-indigo-500/30",
+  },
+  anger: {
+    emoji: "😠",
+    label: "Angry",
+    bgColor: "bg-rose-500/10 dark:bg-rose-500/20",
+    textColor: "text-rose-700 dark:text-rose-400",
+    borderColor: "border-rose-500/20 dark:border-rose-500/30",
+  },
+  confusion: {
+    emoji: "😕",
+    label: "Confused",
+    bgColor: "bg-purple-500/10 dark:bg-purple-500/20",
+    textColor: "text-purple-700 dark:text-purple-400",
+    borderColor: "border-purple-500/20 dark:border-purple-500/30",
+  },
+  sadness: {
+    emoji: "😢",
+    label: "Sad",
+    bgColor: "bg-blue-500/10 dark:bg-blue-500/20",
+    textColor: "text-blue-700 dark:text-blue-400",
+    borderColor: "border-blue-500/20 dark:border-blue-500/30",
+  },
+  neutral: {
+    emoji: "😐",
+    label: "Calm",
+    bgColor: "bg-zinc-500/10 dark:bg-zinc-500/20",
+    textColor: "text-zinc-700 dark:text-zinc-400",
+    borderColor: "border-zinc-500/20 dark:border-zinc-500/30",
+  },
+  suicidal: {
+    emoji: "🚨",
+    label: "Crisis Sign",
+    bgColor: "bg-red-500/10 dark:bg-red-500/25 animate-pulse",
+    textColor: "text-red-700 dark:text-red-400 font-semibold",
+    borderColor: "border-red-500/30 dark:border-red-500/40",
+  },
+};
+
+const DEFAULT_EMOTION: EmotionConfig = {
+  emoji: "✨",
+  label: "Emotion",
+  bgColor: "bg-secondary",
+  textColor: "text-secondary-foreground",
+  borderColor: "border-border",
+};
+
 interface ChatMessageProps {
   message: Message;
   onFeedback?: (messageId: string, rating: FeedbackRating) => void;
@@ -47,6 +115,8 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
     setFeedbackGiven(rating);
     onFeedback?.(message.id, rating);
   };
+
+  const emotionConfig = showEmotion ? (EMOTION_MAP[message.emotion!] || DEFAULT_EMOTION) : null;
 
   return (
     <div
@@ -82,26 +152,32 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
           <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
             {isUser ? "You" : APP_NAME}
           </span>
-          {showEmotion && (
+          {showEmotion && emotionConfig && (
             <div
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-2"
               title={
                 confidencePct !== null
-                  ? `${message.emotion} · ${confidencePct}% model confidence`
+                  ? `${emotionConfig.label} · ${confidencePct}% model confidence`
                   : `Detected emotion: ${message.emotion}`
               }
             >
               <Badge
-                variant="secondary"
-                className="h-4 px-1.5 text-[9px] capitalize"
+                variant="outline"
+                className={cn(
+                  "h-5 gap-1 px-2 text-[10px] font-medium border capitalize select-none",
+                  emotionConfig.bgColor,
+                  emotionConfig.textColor,
+                  emotionConfig.borderColor,
+                )}
               >
-                {message.emotion}
+                <span>{emotionConfig.emoji}</span>
+                <span>{emotionConfig.label}</span>
               </Badge>
               {confidencePct !== null && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   {/* Confidence gauge — bar length + colour reflect how strongly
                       the model read this emotion. */}
-                  <div className="h-1 w-12 overflow-hidden rounded-full bg-muted">
+                  <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -110,7 +186,7 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
                       }}
                     />
                   </div>
-                  <span className="text-[9px] tabular-nums text-muted-foreground">
+                  <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">
                     {confidencePct}%
                   </span>
                 </div>

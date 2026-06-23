@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useChat } from "@/hooks/use-chat";
-import { ChatArea, ConversationSidebar } from "@/components/chat";
+import { ChatArea, ConversationSidebar, CrisisResourcesDialog } from "@/components/chat";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ChatInterface() {
@@ -21,6 +21,8 @@ export function ChatInterface() {
     renameConversation,
     language,
     setLanguage,
+    showCrisisDialog,
+    setShowCrisisDialog,
   } = useChat();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -59,6 +61,12 @@ export function ChatInterface() {
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         language={language}
         onLanguageChange={setLanguage}
+      />
+
+      <CrisisResourcesDialog
+        open={showCrisisDialog}
+        onOpenChange={setShowCrisisDialog}
+        showTrigger={false}
       />
     </div>
   );

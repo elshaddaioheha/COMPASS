@@ -9,6 +9,7 @@ import type {
 } from "@/lib/types";
 import { DEFAULT_LANGUAGE } from "@/lib/constants";
 import { useLocalStorage } from "./use-local-storage";
+import { toast } from "sonner";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -148,6 +149,7 @@ export function useChat() {
   const storage = useLocalStorage();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [showCrisisDialog, setShowCrisisDialog] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
   >(null);
@@ -298,6 +300,33 @@ export function useChat() {
             confidence: data.confidence ?? undefined,
           };
 
+          // ─── Crisis & Depression detection ──────────────────────────────────
+          const isSuicidal = data.emotion === "suicidal";
+          const isSevereDepression = data.emotion === "depression" && typeof data.confidence === "number" && data.confidence >= 0.65;
+
+          if (isSuicidal) {
+            // Self-harm / suicidal is highly critical -> Open the Modal immediately AND show an urgent Toast
+            setShowCrisisDialog(true);
+            toast.error("Critical Safety Notice", {
+              description: "Thoughts of self-harm detected. Please reach out to emergency services or a crisis line immediately.",
+              duration: 15000,
+              action: {
+                label: "Call Hotlines",
+                onClick: () => setShowCrisisDialog(true),
+              },
+            });
+          } else if (isSevereDepression) {
+            // Depression with high confidence -> Show warning Toast with quick helpline access
+            toast.warning("Support Resources Available", {
+              description: "You seem to be going through a difficult time. You don't have to carry this alone.",
+              duration: 10000,
+              action: {
+                label: "Get Support",
+                onClick: () => setShowCrisisDialog(true),
+              },
+            });
+          }
+
           setConversations((prev) => {
             const copy = prev.map((c) =>
               c.id === convoId
@@ -380,5 +409,7 @@ export function useChat() {
     renameConversation,
     language,
     setLanguage,
+    showCrisisDialog,
+    setShowCrisisDialog,
   };
 }

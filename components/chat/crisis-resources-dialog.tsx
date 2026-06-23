@@ -15,15 +15,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { CRISIS_RESOURCES } from "@/lib/constants";
 import { Phone, AlertTriangle } from "lucide-react";
 
-export function CrisisResourcesDialog() {
+interface CrisisResourcesDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showTrigger?: boolean;
+}
+
+export function CrisisResourcesDialog({
+  open,
+  onOpenChange,
+  showTrigger = true,
+}: CrisisResourcesDialogProps) {
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="destructive" size="sm" className="gap-1.5">
-          <AlertTriangle className="size-3.5" />
-          <span className="hidden sm:inline">Crisis Help</span>
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="destructive" size="sm" className="gap-1.5">
+            <AlertTriangle className="size-3.5" />
+            <span className="hidden sm:inline">Crisis Help</span>
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
