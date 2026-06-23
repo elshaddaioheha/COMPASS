@@ -120,8 +120,17 @@ async function callChatApi(
 
       if (!res.ok) {
         // A real application error (400/429/500…) — don't retry these.
-        const text = await res.text().catch(() => "");
-        throw new ApiError(`API returned ${res.status}: ${text}`, res.status);
+        let errMsg = `Server error (${res.status})`;
+        try {
+          const data = await res.json();
+          if (data && (data.reply || data.error)) {
+            errMsg = data.reply || data.error;
+          }
+        } catch {
+          const text = await res.text().catch(() => "");
+          if (text) errMsg = text;
+        }
+        throw new ApiError(errMsg, res.status);
       }
 
       return (await res.json()) as ApiResponse;
@@ -343,13 +352,27 @@ export function useChat() {
         })
         .catch((err) => {
           console.error("[COMPASS] API error:", err);
-          // Show a friendly error message in chat instead of crashing.
-          // The backend may be waking from sleep (free hosting), so invite a retry.
+          
+          let displayMsg = "I couldn't reach the server just now — it may be waking up from sleep, which can take up to a minute on the free tier. Please send your message again in a moment. 🔌";
+          
+          if (err instanceof ApiError) {
+            if (err.status === 429) {
+              displayMsg = `Rate Limit Exceeded: ${err.message} ⏳ Please wait a moment before trying again.`;
+            } else if (err.status === 400) {
+              displayMsg = `Invalid Input: ${err.message} ⚠️`;
+            } else if (err.status === 500) {
+              displayMsg = "The server encountered an error processing your request. Please try again shortly. 🛠️";
+            } else {
+              displayMsg = `${err.message}`;
+            }
+          } else if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
+            displayMsg = "Connection failed. This might be due to a CORS policy block (missing allowed origin) or the server being offline. Please check your console log. 🌐";
+          }
+          
           const errMsg: Message = {
             id: generateId(),
             role: "assistant",
-            content:
-              "I couldn't reach the server just now — it may be waking up from sleep, which can take up to a minute on the free tier. Please send your message again in a moment. 🔌",
+            content: displayMsg,
             timestamp: Date.now(),
           };
           setConversations((prev) => {
