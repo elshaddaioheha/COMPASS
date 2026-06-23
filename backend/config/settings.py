@@ -50,6 +50,27 @@ class Settings:
     RATE_LIMIT_REQUESTS: int = field(default_factory=lambda: int(os.getenv("RATE_LIMIT_REQUESTS", 30)))
     RATE_LIMIT_WINDOW_SECONDS: int = field(default_factory=lambda: int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", 60)))
 
+    # ── CORS ───────────────────────────────────────────────────────────────
+    FRONTEND_ORIGINS: list[str] = field(default_factory=lambda: [
+        orig.strip() for orig in os.getenv(
+            "FRONTEND_ORIGINS", 
+            "http://localhost:3000,https://compass-two-iota.vercel.app"
+        ).split(",") if orig.strip()
+    ])
+
+    # ── Hugging Face Hub ───────────────────────────────────────────────────
+    HF_MODEL_REPO: str = field(default_factory=lambda: os.getenv("HF_MODEL_REPO", "Oheha/compass-emotion-classifier"))
+    HF_TOKEN: str = field(default_factory=lambda: os.getenv("HF_TOKEN", ""))
+
+    # ── Multilingual Translation ───────────────────────────────────────────
+    ENABLE_MULTILINGUAL: bool = field(default_factory=lambda: os.getenv("ENABLE_MULTILINGUAL", "false").lower() == "true")
+    SUPPORTED_LANGUAGES: list[str] = field(default_factory=lambda: [
+        lang.strip() for lang in os.getenv("SUPPORTED_LANGUAGES", "en").split(",") if lang.strip()
+    ])
+    LANGUAGE_TRANSLATION_PROVIDER: str = field(default_factory=lambda: os.getenv("LANGUAGE_TRANSLATION_PROVIDER", "groq"))
+    LANGUAGE_TRANSLATION_TIMEOUT_SECONDS: float = field(default_factory=lambda: float(os.getenv("LANGUAGE_TRANSLATION_TIMEOUT_SECONDS", 8.0)))
+
+
 
 # Singleton — import this everywhere
 settings = Settings()

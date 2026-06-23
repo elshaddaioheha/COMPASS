@@ -62,9 +62,9 @@ _MAX_HISTORY_TURNS = 10
 # ── Startup: confirm LLM status ───────────────────────────────────────────────
 _groq_key = os.getenv("GROQ_API_KEY", "")
 if _groq_key:
-    print(f"[pipeline] ✅ GROQ_API_KEY loaded (key starts with: {_groq_key[:8]}...)")
+    print(f"[pipeline] [OK] GROQ_API_KEY loaded (key starts with: {_groq_key[:8]}...)")
 else:
-    print("[pipeline] ⚠️  GROQ_API_KEY not set — will use template replies.")
+    print("[pipeline] [WARNING] GROQ_API_KEY not set — will use template replies.")
     print("           Add GROQ_API_KEY=gsk_... to your .env file.")
 
 
@@ -199,7 +199,7 @@ def process_message(
             )
         except LLMUnavailable as e:
             # Print the FULL error so we can diagnose API key / network issues
-            print(f"[pipeline] ⚠️  LLM failed — falling back to templates.")
+            print(f"[pipeline] [WARNING] LLM failed — falling back to templates.")
             print(f"           Error: {e}")
             reply = _dm.get_next_reply(user_id, state=updated_state)
 
