@@ -96,13 +96,6 @@ services:
     runtime: node
     buildCommand: npm run build
     publishDir: out # Next.js static export outputs files to 'out' folder
-    routes:
-      # Rewrite /send and /health to the backend to eliminate CORS issues.
-      # IMPORTANT: If your backend service is assigned a different auto-generated domain 
-      # (e.g. compass-backend-bgej.onrender.com), update these destinations accordingly.
-      - type: rewrite
-        source: /send
-        destination: https://compass-backend-bgej.onrender.com/send
-      - type: rewrite
-        source: /health
-        destination: https://compass-backend-bgej.onrender.com/health
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://compass-backend-bgej.onrender.com
