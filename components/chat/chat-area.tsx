@@ -6,6 +6,8 @@ import { ChatTypingIndicator } from "./chat-typing-indicator";
 import { ChatWelcome } from "./chat-welcome";
 import { ChatInput } from "./chat-input";
 import { ChatHeader } from "./chat-header";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Phone, Heart } from "lucide-react";
 import type { Conversation, FeedbackRating, LanguageCode } from "@/lib/types";
 
 interface ChatAreaProps {
@@ -16,6 +18,7 @@ interface ChatAreaProps {
   onToggleSidebar: () => void;
   language: LanguageCode;
   onLanguageChange: (language: LanguageCode) => void;
+  onShowCrisisResources: () => void;
 }
 
 export function ChatArea({
@@ -26,6 +29,7 @@ export function ChatArea({
   onToggleSidebar,
   language,
   onLanguageChange,
+  onShowCrisisResources,
 }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +40,17 @@ export function ChatArea({
   }, [conversation?.messages, isTyping]);
 
   const hasMessages = conversation && conversation.messages.length > 0;
+
+  // Extract emotion and confidence of the last assistant reply to show safety/support banners
+  const lastMessage = conversation?.messages[conversation.messages.length - 1] ?? null;
+  const isLastMessageBot = lastMessage && lastMessage.role === "assistant";
+  const lastEmotion = isLastMessageBot ? lastMessage.emotion : null;
+  const lastConfidence = isLastMessageBot ? lastMessage.confidence : null;
+
+  const isSuicidal = lastEmotion === "suicidal";
+  const isSevereNegative =
+    (lastEmotion === "depression" && (lastConfidence ?? 0) >= 0.65) ||
+    ((lastEmotion === "anxiety" || lastEmotion === "sadness" || lastEmotion === "anger") && (lastConfidence ?? 0) >= 0.75);
 
   return (
     <div className="relative flex flex-1 flex-col h-[100dvh] overflow-hidden">
@@ -61,6 +76,77 @@ export function ChatArea({
                   onFeedback={onFeedback}
                 />
               ))}
+              
+              {/* Crisis Support Banner */}
+              {isSuicidal && (
+                <div className="px-4 md:px-6 py-3 animate-slide-in">
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex gap-3 items-start">
+                    <AlertTriangle className="size-5 text-red-500 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1">
+                      <h4 className="text-sm font-semibold text-red-600 dark:text-red-400">Need Immediate Support?</h4>
+                      <p className="text-xs text-muted-foreground">
+                        You are not alone. Please reach out to one of these emergency helpline resources if you feel in danger or have thoughts of self-harm.
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Button asChild variant="outline" size="sm" className="text-red-600 border-red-500/20 hover:bg-red-500/10 dark:text-red-400 hover:text-red-600">
+                          <a href="tel:08007842433">
+                            <Phone className="size-3.5 mr-1" />
+                            0800-SUICIDE (0800-7842433)
+                          </a>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="text-red-600 border-red-500/20 hover:bg-red-500/10 dark:text-red-400 hover:text-red-600">
+                          <a href="tel:+2348091116264">
+                            <Phone className="size-3.5 mr-1" />
+                            MANI: +234 809 111 6264
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Emotion Regulation Banner */}
+              {isSevereNegative && !isSuicidal && (
+                <div className="px-4 md:px-6 py-3 animate-slide-in">
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex gap-3 items-start">
+                    <Heart className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1">
+                      <h4 className="text-sm font-semibold text-amber-600 dark:text-amber-400">Emotion Regulation & Support</h4>
+                      <p className="text-xs text-muted-foreground">
+                        It seems you are feeling strong emotions right now. Would you like to try a quick exercise to ground yourself or see support resources?
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="xs" 
+                          onClick={() => onSendMessage("I'd like to try a breathing exercise to help me calm down.")}
+                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        >
+                          🌬️ Breathing
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="xs" 
+                          onClick={() => onSendMessage("Can you walk me through a Cognitive Behavioral Therapy technique to challenge my negative thoughts?")}
+                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        >
+                          🧠 CBT Challenge
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="xs" 
+                          onClick={onShowCrisisResources}
+                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        >
+                          📞 Helplines
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {isTyping && <ChatTypingIndicator />}
             </>
           )}

@@ -61,6 +61,7 @@ export function ChatInterface() {
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         language={language}
         onLanguageChange={setLanguage}
+        onShowCrisisResources={() => setShowCrisisDialog(true)}
       />
 
       <CrisisResourcesDialog
