@@ -100,6 +100,18 @@ export function ChatArea({
                             MANI: +234 809 111 6264
                           </a>
                         </Button>
+                        <Button asChild variant="outline" size="sm" className="text-red-600 border-red-500/20 hover:bg-red-500/10 dark:text-red-400 hover:text-red-600">
+                          <a href="tel:09137077242">
+                            <Phone className="size-3.5 mr-1" />
+                            Helpline: 09137077242
+                          </a>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="text-red-600 border-red-500/20 hover:bg-red-500/10 dark:text-red-400 hover:text-red-600">
+                          <a href="tel:08053897559">
+                            <Phone className="size-3.5 mr-1" />
+                            Helpline: 08053897559
+                          </a>
+                        </Button>
                       </div>
                     </div>
                   </div>
