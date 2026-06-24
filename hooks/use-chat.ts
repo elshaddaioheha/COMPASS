@@ -327,6 +327,10 @@ export function useChat() {
                 onClick: () => setShowCrisisDialog(true),
               },
             });
+            // Automatically launch device dialer to dial the primary crisis line (NSPI)
+            if (typeof window !== "undefined") {
+              window.location.href = "tel:08007842433";
+            }
           } else if (isSevereDepression) {
             // Depression with high confidence -> Show warning Toast with quick helpline access
             toast.warning("Support Resources Available", {
