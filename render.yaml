@@ -1,0 +1,108 @@
+# Render Blueprint Specification (render.yaml)
+# To deploy: Go to Render Dashboard -> Blueprints -> New Blueprint Instance -> Select repository.
+
+services:
+  # ── Backend Web Service ─────────────────────────────────────────────────────
+  - type: web
+    name: compass-backend
+    runtime: python
+    rootDir: backend
+
+    # Build: Install dependencies & download spaCy NLP language model
+    buildCommand: |
+      pip install -r requirements.txt &&
+      python -m spacy download en_core_web_sm
+
+    # Start: Gunicorn web server serving Flask app
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT --timeout 120 app:app
+    plan: starter
+
+    envVars:
+      # Flask settings
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true          # Render will auto-generate a secure random key
+      - key: FRONTEND_ORIGINS
+        # Allow frontend domain and local development origin
+        value: http://localhost:3000,https://compass-frontend.onrender.com
+
+      # MongoDB (configure real Atlas URI in the Render Dashboard)
+      - key: MONGO_URI
+        sync: false                  # sync: false = set manually in dashboard secrets
+      - key: MONGO_DB_NAME
+        value: mental_health_chatbot
+      - key: MONGO_COLLECTION
+        value: conversations
+
+      # Redis (configure real Redis URL in the Render Dashboard)
+      - key: REDIS_URL
+        sync: false
+      - key: REDIS_MAX_CONNECTIONS
+        value: "20"
+      - key: SESSION_TTL_SECONDS
+        value: "1800"
+      - key: PREDICTION_CACHE_TTL
+        value: "60"
+
+      # NLP & Hugging Face Model settings
+      - key: USE_ONNX
+        value: "true"
+      - key: MODEL_DIR
+        value: ./distilbert_finetuned
+      - key: ONNX_MODEL_PATH
+        value: ./distilbert_finetuned/onnx_model/model_quantized.onnx
+      - key: LABELS_PATH
+        value: ./label_classes.json
+      - key: HF_MODEL_REPO
+        value: Oheha/compass-emotion-classifier
+      - key: HF_TOKEN
+        sync: false                  # set Hugging Face access token in dashboard secrets
+
+      - key: SPACY_MODEL
+        value: en_core_web_sm
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.50"
+      - key: MAX_INPUT_LENGTH
+        value: "512"
+      - key: MAX_RAW_CHARS
+        value: "1000"
+
+      # Rate limiting
+      - key: RATE_LIMIT_REQUESTS
+        value: "30"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+
+      # Groq LLM (configure Groq API key in Render Dashboard)
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant
+
+      # Multilingual Translation
+      - key: ENABLE_MULTILINGUAL
+        value: "true"
+      - key: SUPPORTED_LANGUAGES
+        value: en,yo,pcm
+      - key: LANGUAGE_TRANSLATION_PROVIDER
+        value: groq
+      - key: LANGUAGE_TRANSLATION_TIMEOUT_SECONDS
+        value: "8.0"
+
+  # ── Frontend Static Site ────────────────────────────────────────────────────
+  - type: static
+    name: compass-frontend
+    runtime: node
+    buildCommand: npm run build
+    publishDir: out # Next.js static export outputs files to 'out' folder
+    routes:
+      # Rewrite /send and /health to the backend to eliminate CORS issues.
+      # IMPORTANT: If your backend service is assigned a different auto-generated domain 
+      # (e.g. compass-backend-bgej.onrender.com), update these destinations accordingly.
+      - type: rewrite
+        source: /send
+        destination: https://compass-backend-bgej.onrender.com/send
+      - type: rewrite
+        source: /health
+        destination: https://compass-backend-bgej.onrender.com/health

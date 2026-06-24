@@ -14,7 +14,10 @@ import { toast } from "sonner";
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "");
 
 // Render's free tier spins the backend down after ~15 min idle, so the first
 // request can take up to ~60s to wake it. Give each attempt a generous timeout
