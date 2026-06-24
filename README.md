@@ -20,8 +20,8 @@ The system utilizes a dual-model hybrid architecture:
 
 ```mermaid
 graph TD
-    User[User / Client Browser] <-->|HTTPS / WSS| FE[Next.js 16 Frontend - Vercel]
-    FE <-->|API Calls / JSON| BE[Flask NLP Backend - Render]
+    User[User / Client Browser] <-->|HTTPS| FE[Next.js 16 Frontend - Render Static Site]
+    FE <-->|API Calls / JSON| BE[Flask NLP Backend - Render Web Service]
     
     subgraph Backend Pipeline
         BE <-->|CORS Check| Settings[Settings Manager]
@@ -74,7 +74,7 @@ graph TD
 ## ⚙️ Tech Stack
 * **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS, Lucide icons, Sonner (Toasts), Radix UI.
 * **Backend:** Python 3.12, Flask, Gunicorn (production server), Transformers, ONNX Runtime.
-* **Infrastructure:** Render (Backend deployment), Vercel (Frontend hosting), MongoDB Atlas, Redis Cloud.
+* **Infrastructure:** Render (Backend Web Service & Frontend Static Site), MongoDB Atlas, Redis Cloud (Vercel has been completely removed).
 
 ---
 
@@ -127,6 +127,18 @@ graph TD
    npm run dev
    ```
 5. Open your browser and navigate to `http://localhost:3000`.
+
+---
+
+## 🚀 Production Deployment on Render
+
+Both the frontend and backend are deployed together under Render's unified ecosystem, completely eliminating Vercel and resolving CORS constraints:
+
+1. **Backend Web Service (`compass-backend`):** Serves the Flask NLP API.
+2. **Frontend Static Site (`compass-frontend`):** Built statically and hosted for free on Render's global CDN.
+3. **CORS Gating & Dynamic URLs:** During the static build on Render, the `NEXT_PUBLIC_API_URL` environment variable is compiled into the static frontend assets, enabling direct absolute requests to the backend without relying on redirect rewrites (which avoids Method Not Allowed 405 errors).
+
+All of this is defined and managed automatically in the root [render.yaml](file:///c:/Users/HP/Desktop/COMPASS-frontend/render.yaml) blueprint specification file.
 
 ---
 
