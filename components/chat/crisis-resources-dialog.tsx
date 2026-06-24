@@ -66,10 +66,19 @@ export function CrisisResourcesDialog({
                 <p className="text-xs text-muted-foreground">
                   {resource.description}
                 </p>
-                <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                  <Phone className="size-3" />
-                  {resource.number}
-                </div>
+                {resource.number.startsWith("tel:") || resource.number.includes("+234") || resource.number.includes("0800") ? (
+                  <Button asChild variant="outline" size="sm" className="w-full text-xs font-semibold text-primary justify-start gap-2">
+                    <a href={`tel:${resource.number.replace(/\s+/g, "")}`}>
+                      <Phone className="size-3.5" />
+                      {resource.number}
+                    </a>
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                    <Phone className="size-3" />
+                    {resource.number}
+                  </div>
+                )}
               </div>
             ))}
           </div>

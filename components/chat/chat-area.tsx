@@ -121,25 +121,28 @@ export function ChatArea({
                           variant="outline" 
                           size="xs" 
                           onClick={() => onSendMessage("I'd like to try a breathing exercise to help me calm down.")}
-                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
                         >
-                          🌬️ Breathing
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-wind size-3.5"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 15.6A2 2 0 1 1 18 19H2"/><path d="M9.8 5.8A2 2 0 1 0 11 9H2"/><path d="M14.5 4.8A2 2 0 1 1 15 8H2"/></svg>
+                          Breathing
                         </Button>
                         <Button 
                           variant="outline" 
                           size="xs" 
                           onClick={() => onSendMessage("Can you walk me through a Cognitive Behavioral Therapy technique to challenge my negative thoughts?")}
-                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
                         >
-                          🧠 CBT Challenge
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-brain size-3.5"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v14"/><path d="M12 12h6"/></svg>
+                          CBT Challenge
                         </Button>
                         <Button 
                           variant="outline" 
                           size="xs" 
                           onClick={onShowCrisisResources}
-                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                          className="text-xs h-7 px-2.5 rounded-lg border-amber-500/20 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
                         >
-                          📞 Helplines
+                          <Phone className="size-3.5" />
+                          Helplines
                         </Button>
                       </div>
                     </div>
