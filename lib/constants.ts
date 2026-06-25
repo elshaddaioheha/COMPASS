@@ -83,6 +83,12 @@ export const QUICK_ACTIONS: QuickAction[] = [
 
 export const CRISIS_RESOURCES: CrisisResource[] = [
   {
+    name: "Deji (Project Student)",
+    number: "+234 913 707 7242",
+    description: "Contact the student developer for direct project assistance or emergency testing.",
+    region: "Nigeria",
+  },
+  {
     name: "Nigeria Suicide Prevention Initiative (NSPI)",
     number: "0800-7842433", // 0800-SUICIDE — matches the backend crisis template
     description:

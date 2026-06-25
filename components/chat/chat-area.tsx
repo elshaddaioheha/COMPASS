@@ -89,6 +89,12 @@ export function ChatArea({
                       </p>
                       <div className="flex flex-wrap gap-2 pt-2">
                         <Button asChild variant="outline" size="sm" className="text-red-600 border-red-500/20 hover:bg-red-500/10 dark:text-red-400 hover:text-red-600">
+                          <a href="tel:+2349137077242">
+                            <Phone className="size-3.5 mr-1" />
+                            Deji (Project Student): +234 913 707 7242
+                          </a>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="text-red-600 border-red-500/20 hover:bg-red-500/10 dark:text-red-400 hover:text-red-600">
                           <a href="tel:08007842433">
                             <Phone className="size-3.5 mr-1" />
                             0800-SUICIDE (0800-7842433)

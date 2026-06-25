@@ -21,6 +21,7 @@ export const AnimatedThemeToggler = ({
 
   // Only show the component after mounting to avoid hydration mismatches
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
